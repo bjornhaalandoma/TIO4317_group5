@@ -85,3 +85,4 @@ def fetch_interest_rates():
 fetch_interest_rates()
 
 print("\nData collection complete. Each asset has its own CSV file in 'financial_data'. Existing files are overwritten.")
+
