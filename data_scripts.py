@@ -9,8 +9,8 @@ output_dir = "financial_data"
 os.makedirs(output_dir, exist_ok=True)
 
 # Define time range
-end_date = datetime.date.today()
-start_date = end_date - datetime.timedelta(days=15 * 365)  # Last 5 years
+end_date = "2025-02-28"
+start_date = "2014-01-02"
 
 # Define tickers for Yahoo Finance
 tickers = {
@@ -18,7 +18,7 @@ tickers = {
     "Natural_Gas": "NG=F",       # Natural Gas Futures
     "NOK_USD": "NOK=X",          # NOK/USD Exchange Rate
     "OSEBX": "^OSEAX",           # OSEBX Index
-    "Var_Energi": "AKRBP.OL"       # Vår Energi Stock Price
+    "Aker_BP": "AKRBP.OL"       # Aker BP Stock Price
 }
 
 # Function to fetch data and store in a single CSV per asset
