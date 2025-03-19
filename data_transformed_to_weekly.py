@@ -44,3 +44,37 @@ for input_file, output_file in zip(input_files, output_files):
     df_weekly.to_csv(file_path, index=False)
 
     print(f"Processed {input_file} and saved as {output_file}")
+    
+# Norwegian policy rate with different columns
+input_file_path = os.path.join('financial_data', 'Norwegian_Policy_Rate.csv')
+df = pd.read_csv(input_file_path)
+
+# Convert the 'Date' column to datetime if not already
+df['Date'] = pd.to_datetime(df['Date'])
+
+# Set 'Date' as the index
+df.set_index('Date', inplace=True)
+
+# Create new columns for the year and week number
+df['Year'] = df.index.year
+df['Week'] = df.index.isocalendar().week
+
+# Resample the data to weekly frequency, using the desired aggregation function (e.g., 'mean', 'sum')
+df_weekly = df.resample('W').agg({
+'Rate': 'last',  # Apply mean to numeric data
+'Week': 'first',         # Take the first value for week number
+'Year': 'last'             # Take the first value for year
+})
+
+#df_weekly[['Year', 'Week']] = df_weekly[['Year', 'Week']].fillna(method='ffill')
+df_weekly['Date'] = df_weekly['Year'].astype(int).astype(str) + '-' + df_weekly['Week'].astype(int).astype(str).str.zfill(2)
+df_weekly = df_weekly.drop(columns=['Year', 'Week'])
+columns = df_weekly.columns.tolist()
+columns = columns[-1:] + columns[:-1]
+df_weekly = df_weekly[columns]
+
+# Save the transformed weekly data to a new CSV file
+file_path = os.path.join('financial_data', f"Norwegian_Policy_Rate_weekly.csv")
+df_weekly.to_csv(file_path, index=False)
+
+print(f"Processed Norwegian_Policy_Rate and saved as Norwegian_Policy_Rate_weekly")
