@@ -19,17 +19,17 @@ file_names = {
     "NaturalGas": "Natural_Gas.csv",
     "NOKUSD": "NOK_USD.csv",
     "OSEBX": "OSEBX.csv",
-    "VarEnergi": "Var_Energi.csv",
+    "AkerBP": "Aker_BP.csv",
     "USTreasury": "US_10Yr_Treasury.csv"
 }
 
 # Load monthly datasets (CPI and Policy Rate)
-cpi_df = pd.read_csv(os.path.join(data_dir, "CPI_rate.csv"), parse_dates=["Month"])
-policy_df = pd.read_csv(os.path.join(data_dir, "Norwegian_Policy_Rate.csv"), parse_dates=["Month"])
+cpi_df = pd.read_csv(os.path.join(data_dir, "CPI_rate.csv"), parse_dates=["Date"])
+policy_df = pd.read_csv(os.path.join(data_dir, "Norwegian_Policy_Rate.csv"), parse_dates=["Date"])
 
 # Sort monthly data
-cpi_df.sort_values("Month", inplace=True)
-policy_df.sort_values("Month", inplace=True)
+cpi_df.sort_values("Date", inplace=True)
+policy_df.sort_values("Date", inplace=True)
 
 # Load the daily data into a dictionary of DataFrames
 data_dict = {}
@@ -59,8 +59,8 @@ for key, df in data_dict.items():
     plot_series(df, "Date", "Log_Returns", f"{key} Log Returns", "Log Returns")
 
 # Visualize monthly data: CPI and Policy Rate (raw)
-plot_series(cpi_df, "Month", "Rate", "CPI Rate Over Time", "CPI Rate (%)")
-plot_series(policy_df, "Month", "Rate", "Norwegian Policy Rate Over Time", "Policy Rate (%)")
+plot_series(cpi_df, "Date", "Rate", "CPI Rate Over Time", "CPI Rate (%)")
+plot_series(policy_df, "Date", "Rate", "Norwegian Policy Rate Over Time", "Policy Rate (%)")
 
 # -------------------------------
 # 3. Check for Stationarity with ADF Test
