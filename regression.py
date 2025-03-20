@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from scipy.stats import jarque_bera
+from statsmodels.stats.diagnostic import het_breuschpagan
+from statsmodels.stats.stattools import durbin_watson
 
 # Function to perform ADF test and check for stationarity
 def check_stationarity(series, name):
@@ -123,6 +125,16 @@ if jb_p_value > 0.05:
     print("Residuals appear to be normally distributed (fail to reject H0).")
 else:
     print("Residuals do not appear to be normally distributed (reject H0).")
+
+# Heteroskedasticity: Breusch–Pagan test
+bp_test = het_breuschpagan(model.resid, model.model.exog)
+print("Breusch–Pagan test p-value:", bp_test[1])
+# Interpretation: p < 0.05 suggests heteroskedasticity, in which case consider robust errors.
+
+# Autocorrelation: Durbin–Watson test
+dw_stat = durbin_watson(model.resid)
+print("Durbin–Watson statistic:", dw_stat)
+# Interpretation: A value around 2 is ideal. Values far from 2 indicate autocorrelation.
 
 # Plot the residuals to check for normality and heteroscedasticity. 
 # Check for linearity
