@@ -146,24 +146,6 @@ X = sm.add_constant(X)
 model = sm.OLS(y, X).fit()
 print(model.summary())
 
-# Diagnostics:
-# Heteroskedasticity: Breusch–Pagan test
-bp_test = het_breuschpagan(model.resid, model.model.exog)
-print("Breusch–Pagan test p-value:", bp_test[1])
-# Interpretation: p < 0.05 suggests heteroskedasticity, in which case consider robust errors.
-
-# Autocorrelation: Durbin–Watson test
-dw_stat = durbin_watson(model.resid)
-print("Durbin–Watson statistic:", dw_stat)
-# Interpretation: A value around 2 is ideal. Values far from 2 indicate autocorrelation.
-
-# Multicollinearity: VIF
-vif_data = pd.DataFrame()
-vif_data["Feature"] = X.columns
-vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
-print(vif_data)
-# Interpretation: VIF values above 5 (or 10) suggest high multicollinearity.
-
 # ======================
 # 6. Next Steps / Modifications if Assumptions are Violated
 # ======================
