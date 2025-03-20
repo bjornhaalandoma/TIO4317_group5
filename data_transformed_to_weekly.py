@@ -2,17 +2,17 @@ import os
 import pandas as pd
 import numpy as np
 
-# Lists of input CSV filenames and corresponding output CSV filenames
-input_files = ['Aker_BP.csv', 'Brent_Crude.csv', 'Natural_Gas.csv', 'NOK_USD.csv', 'OSEBX.csv', 'US_10Yr_Treasury.csv']  # Replace with your list of input files
-output_files = ['Aker_BP_weekly', 'Brent_Crude_weekly', 'Natural_Gas_weekly','NOK_USD_weekly', 'OSEBX_weekly', 'US_10Yr_Treasury_weekly']  # Replace with your list of output files
+# Lists of CSV input filenames and corresponding output CSV filenames
+input_files = ['Aker_BP.csv', 'Brent_Crude.csv', 'Natural_Gas.csv', 'NOK_USD.csv', 'OSEBX.csv', 'US_10Yr_Treasury.csv']  
+output_files = ['Aker_BP_weekly', 'Brent_Crude_weekly', 'Natural_Gas_weekly','NOK_USD_weekly', 'OSEBX_weekly', 'US_10Yr_Treasury_weekly'] 
 
-# Loop through each input file and process
+# Loop through each input file
 for input_file, output_file in zip(input_files, output_files):
     # Load the CSV file into a DataFrame
     input_file_path = os.path.join('financial_data', input_file)
     df = pd.read_csv(input_file_path)
 
-    # Convert the 'Date' column to datetime if not already
+    # Convert the 'Date' column to datetime
     df['Date'] = pd.to_datetime(df['Date'])
 
     # Set 'Date' as the index
@@ -22,23 +22,23 @@ for input_file, output_file in zip(input_files, output_files):
     df['Year'] = df.index.year
     df['Week'] = df.index.isocalendar().week
 
-    # Resample the data to weekly frequency, using the desired aggregation function (e.g., 'mean', 'sum')
+    # Resample the data to weekly frequency, using mean for all the number columns
     df_weekly = df.resample('W').agg({
-    'Close': 'mean',  # Apply mean to numeric data
+    'Close': 'mean',  
     'High': 'mean', 
     'Low': 'mean',
     'Open': 'mean',
     'Volume': 'mean',
-    'Log_Returns': 'mean',# Apply sum to another numeric column
-    'Week': 'first',         # Take the first value for week number
-    'Year': 'last'             # Take the first value for year
+    'Log_Returns': 'mean',
+    'Week': 'first',         
+    'Year': 'last'             
 })
-    
-    df_weekly['Date'] = df_weekly['Year'].astype(int).astype(str) + '-' + df_weekly['Week'].astype(int).astype(str).str.zfill(2)
-    df_weekly = df_weekly.drop(columns=['Year', 'Week'])
-    columns = df_weekly.columns.tolist()
-    columns = columns[-1:] + columns[:-1]
-    df_weekly = df_weekly[columns]
+    # Formatting the csv. file
+    df_weekly['Date'] = df_weekly['Year'].astype(int).astype(str) + '-' + df_weekly['Week'].astype(int).astype(str).str.zfill(2) # Change the 'Date' column to have the format yyyy-weekNo.
+    df_weekly = df_weekly.drop(columns=['Year', 'Week']) # Remove columns 'Year' and 'Week that were used to format the 'Date' column
+    columns = df_weekly.columns.tolist() 
+    columns = columns[-1:] + columns[:-1] # Put the 'Date' column first
+    df_weekly = df_weekly[columns] 
 
     # Save the transformed weekly data to a new CSV file
     file_path = os.path.join('financial_data', f"{output_file}.csv")
@@ -46,7 +46,7 @@ for input_file, output_file in zip(input_files, output_files):
 
     print(f"Processed {input_file} and saved as {output_file}")
     
-# Norwegian policy rate with different columns
+# The same procedure as above for the Norwegian policy rate that has different columns that the csv files above
 input_file_path = os.path.join('financial_data', 'Norwegian_Policy_Rate.csv')
 df = pd.read_csv(input_file_path)
 
@@ -60,19 +60,19 @@ df.set_index('Date', inplace=True)
 df['Year'] = df.index.year
 df['Week'] = df.index.isocalendar().week
 
-# Resample the data to weekly frequency, using the desired aggregation function (e.g., 'mean', 'sum')
+# Resample the data to weekly frequency, using the last rate of the week
 df_weekly = df.resample('W').agg({
-'Rate': 'last',  # Apply mean to numeric data
-'Week': 'first',         # Take the first value for week number
-'Year': 'last'             # Take the first value for year
+'Rate': 'last',  
+'Week': 'first',        
+'Year': 'last'             
 })
 
-#df_weekly[['Year', 'Week']] = df_weekly[['Year', 'Week']].fillna(method='ffill')
-df_weekly['Date'] = df_weekly['Year'].astype(int).astype(str) + '-' + df_weekly['Week'].astype(int).astype(str).str.zfill(2)
-df_weekly = df_weekly.drop(columns=['Year', 'Week'])
+# Formatting the csv. file
+df_weekly['Date'] = df_weekly['Year'].astype(int).astype(str) + '-' + df_weekly['Week'].astype(int).astype(str).str.zfill(2) # Change the 'Date' column to have the format yyyy-weekNo.
+df_weekly = df_weekly.drop(columns=['Year', 'Week']) # Remove columns 'Year' and 'Week that were used to format the 'Date' column
 columns = df_weekly.columns.tolist()
-columns = columns[-1:] + columns[:-1]
-df_weekly = df_weekly[columns]
+columns = columns[-1:] + columns[:-1] # Put the 'Date' column first
+df_weekly = df_weekly[columns] 
 
 # Save the transformed weekly data to a new CSV file
 file_path = os.path.join('financial_data', f"Norwegian_Policy_Rate_weekly.csv")
@@ -80,8 +80,7 @@ df_weekly.to_csv(file_path, index=False)
 
 print(f"Processed Norwegian_Policy_Rate and saved as Norwegian_Policy_Rate_weekly")
 
-# CPI
-# Norwegian policy rate with different columns
+# The same procedure as above for the CPI rate that has different columns that the csv files above and consist of monthly data and not daily
 input_file_path = os.path.join('financial_data', 'CPI_Rate.csv')
 df = pd.read_csv(input_file_path)
 
@@ -100,7 +99,7 @@ def weeks_in_month(date):
 # Compute the number of weeks for each month
 df['Weeks_In_Month'] = df.index.to_series().apply(weeks_in_month)
 
-# Convert Monthly Rate to Weekly Rate based on actual weeks in month
+# Convert Monthly Rate to Weekly Rate using compound rate approximation and the number of weeks in the month
 df['Rate'] = (1 + df['Rate'])**(1/df['Weeks_In_Month']) - 1
 
 # Expand the monthly rate to all weeks within the month
@@ -113,16 +112,11 @@ df_weekly.reset_index(inplace=True)
 df_weekly['Year'] = df_weekly['Date'].dt.year
 df_weekly['Week'] = df_weekly['Date'].dt.isocalendar().week
 
-# Create a formatted 'Date' column in Year-Week format
-df_weekly['Date'] = df_weekly['Year'].astype(str) + '-' + df_weekly['Week'].astype(str).str.zfill(2)
-
-# Reorder columns
-# Reorder columns to ensure 'Date' is the first column
-columns = ['Date'] + [col for col in df_weekly.columns if col != 'Date']
+# Formatting the csv. file
+df_weekly['Date'] = df_weekly['Year'].astype(str) + '-' + df_weekly['Week'].astype(str).str.zfill(2) # Change the 'Date' column to have the format yyyy-weekNo.
+columns = ['Date'] + [col for col in df_weekly.columns if col != 'Date'] # Reorder columns to ensure 'Date' is the first column
 df_weekly = df_weekly[columns]
-
-# Drop unnecessary columns
-df_weekly = df_weekly.drop(columns=['Weeks_In_Month', 'Year', 'Week'])
+df_weekly = df_weekly.drop(columns=['Weeks_In_Month', 'Year', 'Week']) # Remove columns 'Weeks_In_Month', 'Year' and 'Week that were used in calculations and formatting
 
 # Save the transformed weekly data to a new CSV file
 file_path = os.path.join('financial_data', 'CPI_Rate_weekly.csv')
