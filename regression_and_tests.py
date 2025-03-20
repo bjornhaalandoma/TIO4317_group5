@@ -7,6 +7,8 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from scipy.stats import jarque_bera
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.stattools import durbin_watson
+from statsmodels.api import add_constant
+import statsmodels.api as sm
 
 # Function to perform Augmented Dickey-Fuller test and check for stationarity
 def check_stationarity(series, name):
@@ -117,14 +119,38 @@ jb_stat, jb_p_value = jarque_bera(residuals)
 print(f"Jarque-Bera Test: Statistic = {jb_stat}, p-value = {jb_p_value}")
 
 # Check for heteroskedasticity: Do the Breusch–Pagan test. p < 0.05 suggests heteroskedasticity
+print("\n")
 bp_test = het_breuschpagan(model.resid, model.model.exog)
 print("Breusch–Pagan test p-value:", bp_test[1])
 
 # Check for autocorrelation: Do the Durbin–Watson test. A value around 2 is ideal. Values far from 2 indicate autocorrelation.
+print("\n")
 dw_stat = durbin_watson(model.resid)
 print("Durbin–Watson statistic:", dw_stat)
 
+# Check for endogeneity: Did the Durbin-Wu-Hausman test on NOK_USD. p < 0.05 means endogeneity is detected. 
+# Suspected endogenous variable and instrument
+endogenous_var = 'Log_Returns_NOK_USD'  
+instrument_var = 'Log_Returns_US_Treasury'  
+
+# Ensure the instrument is not the dependent variable
+exog_vars = [col for col in X.columns if col not in [endogenous_var, 'const']]
+df['Instrument'] = df[instrument_var]  
+
+# Regress suspected endogenous variable on exogenous variables + instrument
+first_stage = sm.OLS(df[endogenous_var], add_constant(df[exog_vars + ['Instrument']])).fit()
+df['Residuals'] = first_stage.resid  # Get residuals 
+
+# Include residuals in original regression
+second_stage = sm.OLS(y, add_constant(df[exog_vars + [endogenous_var, 'Residuals']])).fit()
+
+# Durbin-Wu-Hausman test: Check significance of residuals
+p_value = second_stage.pvalues['Residuals']
+
+print(f"\nDurbin-Wu-Hausman Test for Exogeneity p-value {p_value}")
+
 # Check for linearity: Plot residuals vs. predicted values. If the residuals are randomly scattered around 0, the linearity assumption is satisfied.
+print("\n")
 sns.residplot(x=model.fittedvalues, y=model.resid, lowess=True, color="b")
 plt.title('Residuals vs Fitted')
 plt.show()
