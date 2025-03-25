@@ -4,13 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import adfuller
 import statsmodels.api as sm
-from statsmodels.stats.diagnostic import het_breuschpagan
-from statsmodels.stats.stattools import durbin_watson
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-
-# -------------------------------
-# 1. Load the Data
-# -------------------------------
 
 # Define directory and file names for daily data
 data_dir = "financial_data"
@@ -39,10 +32,8 @@ for key, file in file_names.items():
     df.sort_values("Date", inplace=True)
     data_dict[key] = df
 
-# -------------------------------
-# 2. Visualize the Data
-# -------------------------------
 
+# Visualisation of the data
 # Function to plot a time series
 def plot_series(df, date_col, value_col, title, ylabel):
     plt.figure(figsize=(10, 4))
@@ -62,9 +53,6 @@ for key, df in data_dict.items():
 plot_series(cpi_df, "Date", "Rate", "CPI Rate Over Time", "CPI Rate (%)")
 plot_series(policy_df, "Date", "Rate", "Norwegian Policy Rate Over Time", "Policy Rate (%)")
 
-# -------------------------------
-# 3. Check for Stationarity with ADF Test
-# -------------------------------
 
 def adf_test(series, title=''):
     result = adfuller(series.dropna())
@@ -94,20 +82,18 @@ adf_test(cpi_df["Diff"], title="CPI Rate - 1st Difference")
 adf_test(policy_df["Diff"], title="Policy Rate - 1st Difference")
 
 # Visualize the differenced (stationary) monthly data
-plot_series(cpi_df, "Month", "Diff", "CPI Rate - 1st Difference", "Diff of CPI Rate")
-plot_series(policy_df, "Month", "Diff", "Norwegian Policy Rate - 1st Difference", "Diff of Policy Rate")
+plot_series(cpi_df, "Date", "Diff", "CPI Rate - 1st Difference", "Diff of CPI Rate")
+plot_series(policy_df, "Date", "Diff", "Norwegian Policy Rate - 1st Difference", "Diff of Policy Rate")
 
 # For clarity in later merging, rename the differenced columns as the stationary versions
-cpi_df.rename(columns={"Month": "Date", "Diff": "CPI_Stationary"}, inplace=True)
-policy_df.rename(columns={"Month": "Date", "Diff": "PolicyRate_Stationary"}, inplace=True)
+cpi_df.rename(columns={"Diff": "CPI_Stationary"}, inplace=True)
+policy_df.rename(columns={"Diff": "PolicyRate_Stationary"}, inplace=True)
 
-# -------------------------------
-# 4. Merge Daily and Monthly Data for Regression
-# -------------------------------
 
-# Use Vår Energi's log returns as the base daily series.
-df_reg = data_dict["VarEnergi"][["Date", "Log_Returns"]].rename(
-    columns={"Log_Returns": "VarEnergi_Log_Returns"}
+# Merge Daily and Monthly Data for Regression
+# Use Aker BP's log returns as the base daily series.
+df_reg = data_dict["AkerBP"][["Date", "Log_Returns"]].rename(
+    columns={"Log_Returns": "AkerBP_Log_Returns"}
 )
 
 # Merge daily exogenous variables (log returns) for the assets
@@ -130,12 +116,9 @@ df_reg = pd.merge_asof(df_reg, policy_df[["Date", "PolicyRate_Stationary"]], on=
 # Drop any rows with missing values (e.g., before the first available monthly observation)
 df_reg.dropna(inplace=True)
 
-# -------------------------------
-# 5. Regression Analysis & Diagnostics
-# -------------------------------
-
+# Regression Analysis
 # Define dependent and independent variables
-y = df_reg["VarEnergi_Log_Returns"]
+y = df_reg["AkerBP_Log_Returns"]
 X = df_reg[["Brent_Log_Returns", "NaturalGas_Log_Returns", "NOKUSD_Log_Returns",
             "OSEBX_Log_Returns", "USTreasury_Log_Returns", "CPI_Stationary", "PolicyRate_Stationary"]]
 
@@ -145,12 +128,3 @@ X = sm.add_constant(X)
 # Fit OLS model
 model = sm.OLS(y, X).fit()
 print(model.summary())
-
-# ======================
-# 6. Next Steps / Modifications if Assumptions are Violated
-# ======================
-# - If the BP test indicates heteroskedasticity (p-value < 0.05), use robust standard errors:
-#       model_robust = model.get_robustcov_results(cov_type='HC3')
-# - If the Durbin–Watson statistic suggests autocorrelation, consider adding lagged variables
-#   or switching to an ARIMAX framework.
-# - If VIF values are high, check for highly correlated predictors and consider removing or combining themimport os
