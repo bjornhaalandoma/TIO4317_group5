@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
+import os
+import calendar
 
 # Lists of CSV input filenames and corresponding output CSV filenames
 input_files = ['Aker_BP.csv', 'Brent_Crude.csv', 'Natural_Gas.csv', 'NOK_USD.csv', 'OSEBX.csv', 'US_10Yr_Treasury.csv']  
@@ -81,45 +83,48 @@ df_weekly.to_csv(file_path, index=False)
 print(f"Processed Norwegian_Policy_Rate and saved as Norwegian_Policy_Rate_weekly")
 
 # The same procedure as above for the CPI rate that has different columns that the csv files above and consist of monthly data and not daily
+# Load CPI monthly data
 input_file_path = os.path.join('financial_data', 'CPI_Rate.csv')
-df = pd.read_csv(input_file_path)
+df_monthly = pd.read_csv(input_file_path)
+df_monthly['Date'] = pd.to_datetime(df_monthly['Date'])
+df_monthly.set_index('Date', inplace=True)
 
-# Convert the 'Date' column to datetime if not already
-df['Date'] = pd.to_datetime(df['Date'])
+# Create a new weekly date range from the start to the end of data
+start_date = df_monthly.index.min()
+end_date = pd.to_datetime('2025-03-03')  # ensure it includes week 9
+weekly_dates = pd.date_range(start=start_date, end=end_date, freq='W-WED')
 
-# Set 'Date' as the index
-df.set_index('Date', inplace=True)
+# Prepare a new DataFrame to store weekly CPI rates
+weekly_data = []
 
-# Function to compute the number of weeks in a month
-def weeks_in_month(date):
-    return len(pd.date_range(start=date.replace(day=1), 
-                             end=date.replace(day=28) + pd.DateOffset(days=4),  # Ensures full month coverage
-                             freq='W'))
+for date, row in df_monthly.iterrows():
+    year = date.year
+    month = date.month
 
-# Compute the number of weeks for each month
-df['Weeks_In_Month'] = df.index.to_series().apply(weeks_in_month)
+    # Calculate number of weeks in the month
+    first_day = pd.Timestamp(year=year, month=month, day=1)
+    last_day = pd.Timestamp(year=year, month=month, day=calendar.monthrange(year, month)[1])
+    weeks_in_month = len(pd.date_range(start=first_day, end=last_day, freq='W'))
 
-# Convert Monthly Rate to Weekly Rate using compound rate approximation and the number of weeks in the month
-df['Rate'] = (1 + df['Rate'])**(1/df['Weeks_In_Month']) - 1
+    # Compute equivalent weekly rate using compound rate approximation
+    monthly_rate = row['Rate']
+    weekly_rate = (1 + monthly_rate)**(1 / weeks_in_month) - 1
 
-# Expand the monthly rate to all weeks within the month
-df_weekly = df.resample('W').ffill()
+    # Get all weekly index within this month
+    weekly_dates_in_month = [d for d in weekly_dates if d >= first_day and d <= last_day]
 
-# Reset index to retain the date column
-df_weekly.reset_index(inplace=True)
-
-# Create a 'Year' and 'Week' column
-df_weekly['Year'] = df_weekly['Date'].dt.year
-df_weekly['Week'] = df_weekly['Date'].dt.isocalendar().week
+    for d in weekly_dates_in_month:
+        weekly_data.append({'Date': d, 'Rate': weekly_rate})
 
 # Formatting the csv. file
-df_weekly['Date'] = df_weekly['Year'].astype(str) + '-' + df_weekly['Week'].astype(str).str.zfill(2) # Change the 'Date' column to have the format yyyy-weekNo.
-columns = ['Date'] + [col for col in df_weekly.columns if col != 'Date'] # Reorder columns to ensure 'Date' is the first column
-df_weekly = df_weekly[columns]
-df_weekly = df_weekly.drop(columns=['Weeks_In_Month', 'Year', 'Week']) # Remove columns 'Weeks_In_Month', 'Year' and 'Week that were used in calculations and formatting
+df_weekly = pd.DataFrame(weekly_data) # Convert to DataFrame
+df_weekly['Year'] = df_weekly['Date'].dt.year # Add year and ISO week number
+df_weekly['Week'] = df_weekly['Date'].dt.isocalendar().week # Add year and ISO week number
+df_weekly['Date'] = df_weekly['Year'].astype(str) + '-' + df_weekly['Week'].astype(str).str.zfill(2) # Format date to yyyy-weekNo.
+df_weekly = df_weekly[['Date', 'Rate']] # Rearrange and remove extra columns
 
 # Save the transformed weekly data to a new CSV file
-file_path = os.path.join('financial_data', 'CPI_Rate_weekly.csv')
-df_weekly.to_csv(file_path, index=False)
+output_file_path = os.path.join('financial_data', 'CPI_Rate_weekly.csv')
+df_weekly.to_csv(output_file_path, index=False)
 
 print("Processed CPI_Rate and saved as CPI_Rate_weekly")
